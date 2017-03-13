@@ -117,21 +117,26 @@ CLASSIFIERS = [
     'Programming Language :: Python',
     'Topic :: Software Development :: Libraries :: Python Modules',
     'Framework :: Django',
+    'Programming Language :: Python :: 2',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
 ]
 
 setup(
     name='django-ses',
-    version='0.5.0',  # When changing this, remember to change it in __init__.py
+    version='0.8.2',  # When changing this, remember to change it in __init__.py
     packages=find_packages(exclude=['example']),
     package_data=package_data,
     author='Harry Marr',
     author_email='harry@hmarr.com',
-    url='http://github.com/hmarr/django-ses/',
+    url='https://github.com/django-ses/django-ses',
     license='MIT',
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     platforms=['any'],
     classifiers=CLASSIFIERS,
-    install_requires=['boto>=2.1.0'],
+    install_requires=["boto>=2.31.0", "pytz>=2016.10"],
     include_package_data=True,
 )

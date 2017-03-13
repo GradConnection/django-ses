@@ -5,10 +5,8 @@ Django-SES
 :Author: Harry Marr (http://github.com/hmarr, http://twitter.com/harrymarr)
 :Collaborators: Paul Craciunoiu (http://github.com/pcraciunoiu, http://twitter.com/embrangler)
 
-**Attention:** This project is not actively maintained as of ~end 2012, but it is still fairly popular and in use.
-If you are interested in helping out, please contact `Paul Craciunoiu (pcraciunoiu)`_.
-
-.. _Paul Craciunoiu (pcraciunoiu): https://github.com/pcraciunoiu/
+.. image:: https://travis-ci.org/django-ses/django-ses.svg
+    :target: https://travis-ci.org/django-ses/django-ses
 
 A bird's eye view
 =================
@@ -41,6 +39,8 @@ time-consuming. Sending emails with Django-SES might be attractive to you if:
 * You need to send a high volume of email.
 * You don't want to have to worry about PTR records, Reverse DNS, email
   whitelist/blacklist services.
+* You want to improve delivery rate and inbox cosmetics by DKIM signing
+  your messages using SES's Easy DKIM feature.
 * Django-SES is a truely drop-in replacement for the default mail backend.
   Your code should require no changes.
 
@@ -67,9 +67,10 @@ Add the following to your settings.py::
     AWS_ACCESS_KEY_ID = 'YOUR-ACCESS-KEY-ID'
     AWS_SECRET_ACCESS_KEY = 'YOUR-SECRET-ACCESS-KEY'
 
-    # Additionally, you can specify an optional region, like so:
-    AWS_SES_REGION_NAME = 'us-east-1'
-    AWS_SES_REGION_ENDPOINT = 'email.us-east-1.amazonaws.com'
+    # Additionally, if you are not using the default AWS region of us-east-1,
+    # you need to specify a region, like so:
+    AWS_SES_REGION_NAME = 'us-west-2'
+    AWS_SES_REGION_ENDPOINT = 'email.us-west-2.amazonaws.com'
 
 Alternatively, instead of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, you
 can include the following two settings values. This is useful in situations
@@ -101,14 +102,34 @@ Using DomainKeys_ is entirely optional, however it is recommended by Amazon for
 authenticating your email address and improving delivery success rate.  See
 http://docs.amazonwebservices.com/ses/latest/DeveloperGuide/DKIM.html.
 Besides authentication, you might also want to consider using DKIM in order to
-remove the `via email-bounces.amazonses.com` message shown to gmail users - 
+remove the `via email-bounces.amazonses.com` message shown to gmail users -
 see http://support.google.com/mail/bin/answer.py?hl=en&answer=1311182.
 
-To enable DKIM signing you should install the pydkim_ package and specify values
+Currently there are two methods to use DKIM with Django-SES: traditional Manual
+Signing and the more recently introduced Amazon Easy DKIM feature.
+
+Easy DKIM
+---------
+Easy DKIM is a feature of Amazon SES that automatically signs every message
+that you send from a verified email address or domain with a DKIM signature.
+
+You can enable Easy DKIM in the AWS Management Console for SES. There you can
+also add the required domain verification and DKIM records to Route 53 (or
+copy them to your alternate DNS).
+
+Once enabled and verified Easy DKIM needs no additional dependencies or
+DKIM specific settings to work with Django-SES.
+
+For more information and a setup guide see:
+http://docs.aws.amazon.com/ses/latest/DeveloperGuide/easy-dkim.html
+
+Manual DKIM Signing
+-------------------
+To enable Manual DKIM Signing you should install the pydkim_ package and specify values
 for the ``DKIM_PRIVATE_KEY`` and ``DKIM_DOMAIN`` settings.  You can generate a
 private key with a command such as ``openssl genrsa 512`` and get the public key
 portion with ``openssl rsa -pubout <private.key``.  The public key should be
-published to ``ses._domainkey.example.com`` if your domain is example.com.  You 
+published to ``ses._domainkey.example.com`` if your domain is example.com.  You
 can use a different name instead of ``ses`` by changing the ``DKIM_SELECTOR``
 setting.
 
@@ -135,7 +156,7 @@ Example DNS record published to Route53 with boto:
 .. _DomainKeys: http://dkim.org/
 
 
-SES Sending Stats 
+SES Sending Stats
 =================
 
 Django SES comes with two ways of viewing sending statistics.
@@ -160,12 +181,6 @@ To generate and view SES sending statistics reports, include, update
 *Optional enhancements to stats:*
 
 
-Localized datetime in the stats dashboard
------------------------------------------
-You can install ``pytz`` to localize the Amazon timestamp
-(assumed UTC) to your locale. This will also make the date more readable,
-using Django's default formatting.
-
 Link the dashboard from the admin
 ---------------------------------
 You can use adminplus for this (https://github.com/jsocol/django-adminplus)::
@@ -180,6 +195,10 @@ django-ses also comes with a model that lets you store these. To use this
 feature you'll need to first run ``syncdb``::
 
     python manage.py syncdb
+
+If you are running Django 1.9 or greater, you'll need to run this command::
+
+    python manage.py migrate --run-syncdb
 
 To collect the statistics, run the ``get_ses_statistics`` management command
 (refer to next section for details). After running this command the statistics
@@ -244,12 +263,28 @@ Full List of Settings
   where you would like to use separate access keys for different AWS services.
 
 ``AWS_SES_REGION_NAME``, ``AWS_SES_REGION_ENDPOINT``
-  Optionally specify what region your SES service is using. Details:
+  Optionally specify what region your SES service is using. Note that this is
+  required if your SES service is not using us-east-1, as omitting these settings
+  implies this region. Details:
   http://readthedocs.org/docs/boto/en/latest/ref/ses.html#boto.ses.regions
+  http://docs.aws.amazon.com/general/latest/gr/rande.html
 
 ``AWS_SES_RETURN_PATH``
   Instruct Amazon SES to forward bounced emails and complaints to this email.
   For more information please refer to http://aws.amazon.com/ses/faqs/#38
+
+``AWS_SES_PROXY``
+  Optional. Use this address as a proxy while connecting to Amazon SES.
+
+``AWS_SES_PROXY_PORT``
+  Optional. Use this port for proxy connections while connecting to Amazon SES.
+
+``AWS_SES_PROXY_USER``
+  Optional. Use this user when setting up proxy connections while connecting to Amazon SES.
+
+``AWS_SES_PROXY_PASS``
+  Optional. Use this password when setting up proxy connections while connecting to Amazon SES.
+
 
 ``TIME_ZONE``
   Default Django setting, optionally set this. Details:
